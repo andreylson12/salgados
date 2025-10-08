@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel - Rs lubrificantes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#111111" />
+  <style>
+    body { margin:0; font-family:Arial, sans-serif; display:flex; height:100vh; background:#1c1c1c; color:#fff; }
+    .sidebar{ width:220px; background:#111; padding:20px; }
+    .sidebar a{ display:block; margin:10px 0; padding:8px; border-radius:4px; text-decoration:none; color:#fff; cursor:pointer; }
+    .sidebar a:hover{ background:#333; }
+    .content{ flex:1; padding:20px; overflow-y:auto; }
+    section{ display:none; }
+    section.active{ display:block; }
+    table{ border-collapse:collapse; width:100%; background:#2c3e50; }
+    th, td{ padding:8px; border:1px solid #444; vertical-align: top; text-align:center; }
+    input, button, select{ padding:8px; margin:5px 0; border-radius:6px; border:none; }
+    input[type="number"]{ width:120px; }
+    input[type="url"], input[type="text"]{ width:100%; max-width:360px; }
+    button{ background:#27ae60; color:#fff; cursor:pointer; }
+    button:hover{ background:#219150; }
+    .btn-remover{ background:#e74c3c; }
+    .btn-editar{ background:#2980b9; }
+    .btn-cancelar{ background:#7f8c8d; }
+    .btn-salvar{ background:#27ae60; }
+    .acao-grid{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    .total-row td{font-weight:700;background:#152536;color:#fff}
+    tr.editing{ background:#24394d; }
+    .helper{ color:#bbb; font-size:12px; margin-top:2px; word-break:break-all; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Rs lubrificantes</h2>
+    <a onclick="mostrarSecao('produtos')">🏷️ Produtos</a>
+    <a onclick="mostrarSecao('pedidos')">🚚 Pedidos</a>
+  </div>
+
+  <div class="content">
+    <h1>Painel Administrativo</h1>
+    <p>Gerencie seus produtos e pedidos.</p>
+
+    <section id="produtos" class="active">
+      <h2>🏷️ Produtos</h2>
+      <form id="formProdutos">
+        <input id="nomeProduto" placeholder="Nome" required />
+        <input id="precoProduto" type="number" step="0.01" placeholder="Preço" required />
+        <input id="estoqueProduto" type="number" placeholder="Estoque" required />
+        <input id="imagemProduto" placeholder="URL da Imagem" />
+        <button type="submit">Salvar</button>
+        <div class="helper">Dica: você também pode editar produtos direto na tabela abaixo.</div>
+      </form>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th><th>Preço</th><th>Estoque</th><th>Imagem (URL)</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="listaProdutos"></tbody>
+      </table>
+    </section>
+
+    <section id="pedidos">
+      <h2>🚚 Pedidos</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Cliente</th><th>Endereço</th><th>Itens</th>
+            <th>Total</th><th>Pagamento</th><th>Status</th><th>Ações</th>
+          </tr>
+        </thead>
+
+        <tbody id="listaPedidos"></tbody>
+
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="4" style="text-align:right">Total geral:</td>
+            <td id="tdTotalGeral">R$ 0,00</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+  </div>
+
+  <audio id="alertSound" preload="auto"></audio>
+
+  <script>
+    const API = { produtos: "/api/produtos", pedidos: "/api/pedidos" };
+    const moeda = n => Number(n).toFixed(2).replace('.', ',');
+
+    function mostrarSecao(id){
+      document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    // ---------------- Service Worker + Push (opcional) ----------------
+    let swReg = null;
+    async function registrarServiceWorker() {
+      if ("serviceWorker" in navigator) {
+        try {
+          swReg = await navigator.serviceWorker.register("/service-worker.js");
+          console.log("[SW] registrado", swReg);
+        } catch (e) {
+          console.warn("[SW] falhou:", e);
+        }
+      }
+    }
+    function urlBase64ToUint8Array(base64String){
+      const padding = "=".repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const rawData = atob(base64);
+      return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+    }
+    async function inscreverPush() {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+      try {
+        const keyRes = await fetch("/api/push/public-key");
+        if (!keyRes.ok) return;
+        const { publicKey } = await keyRes.json();
+        if (!publicKey) return;
+        const perm = await Notification.requestPermission();
+        if (perm !== "granted") return;
+        const reg = swReg || (await navigator.serviceWorker.ready);
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+        await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sub)
+        });
+      } catch (_) { /* silencioso */ }
+    }
+    function notificarBanner(p) {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      if (swReg && swReg.showNotification) {
+        swReg.showNotification("Novo pedido!", {
+          body: `#${p.id} · ${p.cliente?.nome || "Cliente"} · R$ ${moeda(p.total)}`,
+          tag: `pedido-${p.id}`,
+          vibrate: [100, 50, 100],
+          icon: "/icons/icon-192.png",
+          badge: "/icons/icon-192.png"
+        });
+      } else {
+        new Notification("Novo pedido!", {
+          body: `#${p.id} · ${p.cliente?.nome || "Cliente"} · R$ ${moeda(p.total)}`,
+          tag: `pedido-${p.id}`
+        });
+      }
+    }
+
+    // ---------------- Produtos (edição inline) ----------------
+    const estadoEdicao = new Map(); // id(string) -> { ... }
+
+    async function carregarProdutos(){
+      const res = await fetch(API.produtos, { cache:"no-store" });
+      if (!res.ok) {
+        const t = await res.text().catch(()=> "");
+        console.error("Falha /api/produtos:", res.status, t);
+        alert("Falha ao carregar produtos.");
+        return;
+      }
+      const produtos = await res.json();
+      if (!Array.isArray(produtos)) {
+        console.error("Resposta inesperada de /api/produtos:", produtos);
+        alert("Resposta inesperada ao listar produtos.");
+        return;
+      }
+      const tbody = document.getElementById("listaProdutos");
+      tbody.innerHTML = "";
+      produtos.forEach(p=>{
+        const tr = document.createElement("tr");
+        const id = String(p.id);
+        tr.dataset.id = id;
+        tr.innerHTML = renderLinhaProdutoView({ ...p, id });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderLinhaProdutoView(p){
+      const img = p.imagem || "https://via.placeholder.com/300x300?text=Produto";
+      const idAttr = escapeAttr(String(p.id));
+      return `
+        <td title="${escapeAttr(p.nome)}">${escapeHtml(p.nome)}</td>
+        <td>R$ ${moeda(p.preco)}</td>
+        <td>${Number(p.estoque)}</td>
+        <td><div class="helper">${escapeHtml(img)}</div></td>
+        <td>
+          <div class="acao-grid">
+            <button class="btn-editar" onclick="editarProduto('${idAttr}')">Editar</button>
+            <button class="btn-remover" onclick="removerProduto('${idAttr}')">Excluir</button>
+          </div>
+        </td>
+      `;
+    }
+
+    function renderLinhaProdutoEdit(p){
+      const id = String(p.id);
+      const valores = estadoEdicao.get(id) || { nome:p.nome, preco:p.preco, estoque:p.estoque, imagem:p.imagem || "" };
+      const idAttr = escapeAttr(id);
+      return `
+        <td>
+          <input type="text" id="edit-nome-${idAttr}" value="${escapeAttr(valores.nome)}" placeholder="Nome" />
+        </td>
+        <td>
+          <input type="number" id="edit-preco-${idAttr}" value="${Number(valores.preco)}" step="0.01" min="0" placeholder="Preço" />
+        </td>
+        <td>
+          <input type="number" id="edit-estoque-${idAttr}" value="${parseInt(valores.estoque||0)}" min="0" placeholder="Estoque" />
+        </td>
+        <td>
+          <input type="url" id="edit-imagem-${idAttr}" value="${escapeAttr(valores.imagem || "")}" placeholder="URL da imagem" />
+          <div class="helper">Dica: deixe vazio para manter a atual.</div>
+        </td>
+        <td>
+          <div class="acao-grid">
+            <button class="btn-salvar" onclick="salvarProduto()">Salvar</button>
+            <button class="btn-cancelar" onclick="cancelarEdicao('${idAttr}')">Cancelar</button>
+          </div>
+        </td>
+      `;
+    }
+
+    function editarProduto(id){
+      id = String(id);
+      const tr = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
+      if (!tr) return;
+      if (tr.classList.contains("editing")) return;
+
+      const tds = tr.querySelectorAll("td");
+      const atual = {
+        nome: tds[0].innerText.trim(),
+        preco: parseFloat((tds[1].innerText || "0").replace(/[^\d,.-]/g,"").replace(".","").replace(",", ".")) || 0,
+        estoque: parseInt(tds[2].innerText) || 0,
+        imagem: (tds[3].querySelector(".helper")?.textContent || "").trim()
+      };
+      estadoEdicao.set(id, { ...atual, original: atual });
+
+      tr.classList.add("editing");
+      tr.innerHTML = renderLinhaProdutoEdit({ id, ...atual });
+
+      const inputs = tr.querySelectorAll("input");
+      inputs.forEach(inp=>{
+        inp.addEventListener("keydown", (e)=>{
+          if (e.key === "Enter") salvarProduto();
+          if (e.key === "Escape") cancelarEdicao(id);
+        });
+      });
+      tr.querySelector(`#edit-nome-${CSS.escape(id)}`)?.focus();
+    }
+
+    function cancelarEdicao(id){
+      id = String(id);
+      const tr = document.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
+      if (!tr) return;
+      const st = estadoEdicao.get(id);
+      const p = st?.original ? { id, ...st.original } : { id, nome: "-", preco: 0, estoque: 0, imagem: "" };
+      tr.classList.remove("editing");
+      tr.innerHTML = renderLinhaProdutoView(p);
+      estadoEdicao.delete(id);
+    }
+
+    async function salvarProduto(){
+      const tr = document.querySelector("tr.editing");
+      if (!tr) return;
+      const id = String(tr.dataset.id);
+      if (!id) { alert("ID do produto não encontrado."); return; }
+
+      const nome    = (document.getElementById(`edit-nome-${id}`)?.value || "").trim();
+      const preco   = parseFloat(document.getElementById(`edit-preco-${id}`)?.value || "0");
+      const estoque = parseInt(document.getElementById(`edit-estoque-${id}`)?.value || "0");
+      const imagem  = (document.getElementById(`edit-imagem-${id}`)?.value || "").trim();
+
+      if (!nome) return alert("Informe o nome.");
+      if (Number.isNaN(preco) || preco < 0) return alert("Preço inválido.");
+      if (!Number.isInteger(estoque) || estoque < 0) return alert("Estoque inválido.");
+
+      const payload = { nome, preco, estoque };
+      if (imagem) payload.imagem = imagem;
+
+      try{
+        let res = await fetch(`${API.produtos}/${encodeURIComponent(id)}`, {
+          method:"PATCH",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          res = await fetch(`${API.produtos}/${encodeURIComponent(id)}`, {
+            method:"PUT",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify(payload)
+          });
+        }
+        if (!res.ok) {
+          const txt = await res.text().catch(()=> "");
+          throw new Error(`Falha ao atualizar produto (HTTP ${res.status}) ${txt}`);
+        }
+        await carregarProdutos();
+      }catch(e){
+        console.error(e);
+        alert("Erro ao salvar. Veja o console para detalhes.");
+      }finally{
+        estadoEdicao.delete(id);
+      }
+    }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+      }[s]));
+    }
+    function escapeAttr(str){
+      return escapeHtml(str).replace(/"/g, "&quot;");
+    }
+
+    async function removerProduto(id){
+      id = String(id);
+      if(confirm("Excluir?")){
+        await fetch(`${API.produtos}/${encodeURIComponent(id)}`, { method:"DELETE" });
+        carregarProdutos();
+      }
+    }
+
+    // Criação de produto (POST)
+    document.getElementById("formProdutos").addEventListener("submit", async e=>{
+      e.preventDefault();
+      const novo = {
+        nome: document.getElementById("nomeProduto").value.trim(),
+        preco: parseFloat(document.getElementById("precoProduto").value),
+        estoque: parseInt(document.getElementById("estoqueProduto").value),
+        imagem: document.getElementById("imagemProduto").value || "https://via.placeholder.com/300x300?text=Produto"
+      };
+      if (!novo.nome) return alert("Informe o nome.");
+      if (Number.isNaN(novo.preco) || novo.preco < 0) return alert("Preço inválido.");
+      if (!Number.isInteger(novo.estoque) || novo.estoque < 0) return alert("Estoque inválido.");
+
+      const res = await fetch(API.produtos, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(novo)
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(()=> "");
+        alert("Falha ao criar produto: " + t);
+        return;
+      }
+      e.target.reset();
+      carregarProdutos();
+    });
+
+    // ---------------- Pedidos ----------------
+    function atualizarAutoSoma(pedidos){
+      const total = (Array.isArray(pedidos) ? pedidos : [])
+        .reduce((s, p) => s + Number(p.total || 0), 0);
+      const td = document.getElementById('tdTotalGeral');
+      if (td) td.textContent = 'R$ ' + moeda(total);
+    }
+
+    let pedidosConhecidos = new Set();
+    async function carregarPedidos(){
+      const res = await fetch(API.pedidos, { cache:"no-store" });
+      if (!res.ok) return; // rota é protegida por Basic Auth (já está no painel)
+      const pedidos = await res.json();
+      const tbody = document.getElementById("listaPedidos");
+      tbody.innerHTML = "";
+
+      pedidos.forEach(p => {
+        if (!pedidosConhecidos.has(p.id)) {
+          if (pedidosConhecidos.size > 0) notificarBanner(p);
+          pedidosConhecidos.add(p.id);
+        }
+      });
+
+      pedidos.forEach(p=>{
+        const id = String(p.id);
+        const itens = (p.itens||[]).map(i => `${i.nome} x${i.quantidade}`).join(", ");
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(id)}</td>
+          <td>${escapeHtml(p.cliente?.nome||"-")}</td>
+          <td>${escapeHtml(p.cliente?.endereco||"-")}</td>
+          <td>${escapeHtml(itens)}</td>
+          <td>R$ ${moeda(p.total)}</td>
+          <td>${p.pix?"PIX":"Outro"}</td>
+          <td>
+            <select onchange="atualizarStatus('${escapeAttr(id)}', this.value)">
+              <option ${p.status==="Pendente"?"selected":""}>Pendente</option>
+              <option ${p.status==="Preparando"?"selected":""}>Preparando</option>
+              <option ${p.status==="Saiu para entrega"?"selected":""}>Saiu para entrega</option>
+              <option ${p.status==="Concluído"?"selected":""}>Concluído</option>
+            </select>
+          </td>
+          <td><button class="btn-remover" onclick="removerPedido('${escapeAttr(id)}')">Excluir</button></td>`;
+        tbody.appendChild(tr);
+      });
+
+      atualizarAutoSoma(pedidos);
+    }
+
+    async function atualizarStatus(id, status){
+      id = String(id);
+      await fetch(`${API.pedidos}/${encodeURIComponent(id)}/status`, {
+        method:"PUT",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ status })
+      });
+      carregarPedidos();
+    }
+    async function removerPedido(id){
+      id = String(id);
+      if(confirm("Excluir pedido?")){
+        await fetch(`${API.pedidos}/${encodeURIComponent(id)}`, { method:"DELETE" });
+        carregarPedidos();
+      }
+    }
+
+    // ---------------- Bootstrap ----------------
+    document.addEventListener("DOMContentLoaded", ()=>{
+      registrarServiceWorker().then(inscreverPush);
+      carregarProdutos();
+      carregarPedidos();
+      setInterval(carregarPedidos, 5000);
+
+      document.getElementById("listaProdutos").addEventListener("dblclick", (e)=>{
+        const tr = e.target.closest("tr[data-id]");
+        if (tr) editarProduto(String(tr.dataset.id));
+      });
+    });
+  </script>
+</body>
+</html>

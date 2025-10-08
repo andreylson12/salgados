@@ -1,5 +1,5 @@
 // public/service-worker.js
-const CACHE = "salgados-v10"; // ↑ mude a versão sempre que alterar o SW
+const CACHE = "salgados-rayleniza-v1";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -7,9 +7,7 @@ self.addEventListener("install", (e) => {
       c.addAll([
         "/delivery",
         "/delivery.html",
-        "/style.css",
-        "/script.js",
-        "/manifest.json?v=10", // combine com o link no HTML
+        "/manifest.json?v=6",
         "/icons/icon-192.png",
         "/icons/icon-512.png",
       ])
@@ -28,45 +26,16 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
+  const url = new URL(event.request.url);
 
-  // Apenas GET
-  if (req.method !== "GET") return;
-
-  const sameOrigin = url.origin === self.location.origin;
-
-  // API da MESMA origem = network-first
-  if (sameOrigin && url.pathname.startsWith("/api/")) {
-    event.respondWith(
-      fetch(req).catch(() => caches.match(req))
-    );
+  // API = network-first
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
     return;
   }
 
-  // OUTRA origem (ex.: via.placeholder.com) -> não intercepta/cacheia
-  if (!sameOrigin) {
-    event.respondWith(fetch(req));
-    return;
-  }
-
-  // Navegações = tenta rede e cai pro /delivery.html se offline
-  if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req).catch(() => caches.match("/delivery.html"))
-    );
-    return;
-  }
-
-  // Estáticos da MESMA origem = cache-first com write-through
+  // assets = cache-first
   event.respondWith(
-    caches.match(req).then((cached) =>
-      cached ||
-      fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req, copy));
-        return res;
-      })
-    )
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
 });

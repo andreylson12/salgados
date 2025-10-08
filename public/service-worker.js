@@ -1,19 +1,17 @@
 // public/service-worker.js
-const CACHE = "rs-lubrificantes-v6"; // 👈 versão nova
+const CACHE = "salgados-v10"; // ↑ mude a versão sempre que alterar o SW
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE).then((c) =>
       c.addAll([
-        // Pré-cache SOMENTE o que é público do delivery
         "/delivery",
         "/delivery.html",
         "/style.css",
         "/script.js",
-        "/manifest.json?v=6",   // 👈 combine com o link do HTML
+        "/manifest.json?v=10", // combine com o link no HTML
         "/icons/icon-192.png",
         "/icons/icon-512.png",
-        // ⚠️ não coloque rotas /api aqui
       ])
     )
   );
@@ -30,18 +28,45 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
+  const req = event.request;
+  const url = new URL(req.url);
 
-  // API = network-first (para sempre pegar a lista mais recente)
-  if (url.pathname.startsWith("/api/")) {
+  // Apenas GET
+  if (req.method !== "GET") return;
+
+  const sameOrigin = url.origin === self.location.origin;
+
+  // API da MESMA origem = network-first
+  if (sameOrigin && url.pathname.startsWith("/api/")) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(req).catch(() => caches.match(req))
     );
     return;
   }
 
-  // Demais arquivos estáticos = cache-first
+  // OUTRA origem (ex.: via.placeholder.com) -> não intercepta/cacheia
+  if (!sameOrigin) {
+    event.respondWith(fetch(req));
+    return;
+  }
+
+  // Navegações = tenta rede e cai pro /delivery.html se offline
+  if (req.mode === "navigate") {
+    event.respondWith(
+      fetch(req).catch(() => caches.match("/delivery.html"))
+    );
+    return;
+  }
+
+  // Estáticos da MESMA origem = cache-first com write-through
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    caches.match(req).then((cached) =>
+      cached ||
+      fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy));
+        return res;
+      })
+    )
   );
 });

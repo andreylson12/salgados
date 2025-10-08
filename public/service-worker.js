@@ -1,5 +1,5 @@
 // public/service-worker.js
-const CACHE = "salgados-rayleniza-v1";
+const CACHE = "salgados-rayleniza-v8";
 
 self.addEventListener("install", (e) => {
   e.waitUntil(

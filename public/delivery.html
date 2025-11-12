@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Salgados da Rayleniza – Delivery</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="manifest" href="/manifest.json?v=8">
   <meta name="theme-color" content="#0b0f1a">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Salgados da Rayleniza">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-
   <style>
     :root{
       --bg:#0b0f1a;
@@ -19,171 +15,155 @@
       --text:#e2e8f0;
       --muted:#94a3b8;
       --brand:#ea580c;
-      --brand2:#f59e0b;
-      --ok:#22c55e;
       --blue:#3b82f6;
       --radius:14px;
       --shadow:0 10px 26px rgba(0,0,0,.25);
     }
-    body{
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      margin:0;
-      background:linear-gradient(160deg,#0b0f1a 0%,#0f172a 60%,#111827 100%);
-      color:var(--text);
-    }
-    header{
-      background:linear-gradient(180deg,#0f172a 0%,#0b0f1a 100%);
-      padding:16px 14px; text-align:center;
-      position:sticky; top:0; z-index:5;
-      border-bottom:1px solid #0b1220;
-    }
+    body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text)}
+    header{background:#0f172a;padding:16px;text-align:center;position:sticky;top:0;z-index:10}
     header h1{margin:0;font-size:18px}
     header p{margin:4px 0 0;color:var(--muted);font-size:13px}
     main{padding:14px}
     .produtos{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
-    @media (min-width:420px){.produtos{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}}
-    @media (min-width:720px){.produtos{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}}
-    .card{background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%);border:1px solid #0b1220;border-radius:var(--radius);padding:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;min-height:260px}
+    .card{background:#0f172a;border:1px solid #0b1220;border-radius:var(--radius);padding:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
     .img-wrap{width:100%;aspect-ratio:4/3;background:#0b1220;border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .img-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block;border-radius:8px}
-    .card h3{margin:0;font-size:15px;line-height:1.2;min-height:2.4em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-    .card .price{font-weight:700;color:#ffedd5}
+    .img-wrap img{max-width:100%;max-height:100%;object-fit:contain}
+    .card h3{margin:0;font-size:15px;line-height:1.2}
+    .price{font-weight:700;color:#ffedd5}
     .stock{font-size:12px;color:var(--muted)}
-    .btn{background:linear-gradient(180deg,var(--brand) 0%,#c2410c 100%);color:#fff;border:none;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:600}
+    .btn{background:linear-gradient(180deg,var(--brand) 0%,#c2410c 100%);color:#fff;border:none;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:600}
     .btn:hover{filter:brightness(.98)}
-    .btn[disabled]{opacity:.5;cursor:not-allowed}
-    #carrinho,#pagamento{background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%);border:1px solid #0b1220;color:var(--text);padding:14px;border-radius:var(--radius);margin:16px 0;box-shadow:var(--shadow)}
+    #carrinho,#pagamento{background:#0f172a;border:1px solid #0b1220;color:var(--text);padding:14px;border-radius:var(--radius);margin:16px 0;box-shadow:var(--shadow)}
     #pagamento{text-align:center;display:none}
-    #pixQr{width:220px;height:220px;margin:10px auto;position:relative;background:#fff;border-radius:12px;padding:6px}
+    #pixQr{width:220px;height:220px;margin:10px auto;background:#fff;border-radius:12px;padding:6px}
     .btn-finalizar{width:100%;padding:12px;background:linear-gradient(180deg,var(--blue),#2563eb);color:#fff;border:none;border-radius:12px;font-size:16px;cursor:pointer}
     .btn-finalizar[disabled]{opacity:.65;cursor:not-allowed}
     .muted{color:var(--muted);font-size:13px;margin-top:6px}
-    .expired{color:#fda4af;font-weight:bold}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 </head>
 <body>
   <header>
     <h1>Salgados da Rayleniza</h1>
-    <p>Escolha seus salgados e faça seu pedido</p>
+    <p>Faça seu pedido e pague pelo PIX</p>
   </header>
 
   <main>
     <section class="produtos" id="listaProdutos"></section>
 
     <section id="carrinho">
-      <h2>🛒 Seu Carrinho</h2>
+      <h2>🛒 Carrinho</h2>
       <table>
         <thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Total</th></tr></thead>
         <tbody id="itensCarrinho"></tbody>
       </table>
       <h3 id="totalCarrinho">Total: R$ 0,00</h3>
-      <input id="clienteNome" placeholder="Seu Nome" required />
-      <input id="clienteEndereco" placeholder="Endereço de entrega" required />
+
+      <input id="clienteNome" placeholder="Seu nome" required>
+      <input id="clienteEndereco" placeholder="Endereço de entrega" required>
       <select id="clientePagamento">
         <option value="PIX">PIX</option>
         <option>Dinheiro</option>
         <option>Cartão</option>
       </select>
+
       <button id="btnFinalizar" class="btn-finalizar" onclick="finalizarPedido()">Finalizar Pedido</button>
     </section>
 
     <section id="pagamento">
       <h2>💳 Pagamento via PIX</h2>
       <div id="pixQr"></div>
-      <p id="pixTimer" class="muted"></p>
       <p>Chave PIX (Telefone): <strong id="pixChave"></strong></p>
       <p class="muted">Nome: <span id="pixNome"></span> — Cidade: <span id="pixCidade"></span></p>
-      <div class="row-btns">
-        <button id="btnCopiarChave" class="btn" onclick="copiarChave()">📋 Copiar chave PIX</button>
-        <button id="btnCopiarPayload" class="btn" onclick="copiarPayload()">📋 Copiar código PIX</button>
-        <button id="btnCopiarValor" class="btn" onclick="copiarValor()">📋 Copiar valor</button>
-      </div>
-      <p id="msgCopiado" style="display:none;color:#22c55e">✅ Chave copiada!</p>
-      <p id="msgCopiadoPayload" style="display:none;color:#22c55e">✅ Código PIX copiado!</p>
-      <p id="msgCopiadoValor" style="display:none;color:#22c55e">✅ Valor copiado!</p>
+      <button class="btn" onclick="copiarChave()">📋 Copiar chave</button>
+      <button class="btn" onclick="copiarPayload()">📋 Copiar código PIX</button>
+      <p id="msgCopiado" style="display:none;color:#22c55e">✅ Copiado!</p>
     </section>
   </main>
 
   <script>
-    let carrinho = [];
-    let chavePix = "", nomeLoja = "", cidade = "", telefoneFmt = "";
-    let _payload = "", _valor = 0;
-
-    const moeda = n => Number(n).toFixed(2).replace('.', ',');
+    let carrinho=[], chavePix="", nomeLoja="", cidade="", telefoneFmt="", _payload="", _valor=0;
+    const moeda=n=>Number(n).toFixed(2).replace('.',',');
 
     async function carregarChavePix(){
       try{
-        const r = await fetch("/api/chave-pix");
-        const d = await r.json();
-        chavePix = d.chave || "";
-        nomeLoja = d.nome || "";
-        cidade = d.cidade || "";
-        telefoneFmt = d.telefone || chavePix;
-        document.getElementById("pixChave").textContent = telefoneFmt;
-        document.getElementById("pixNome").textContent = nomeLoja;
-        document.getElementById("pixCidade").textContent = cidade;
-      }catch(e){ console.error("Erro ao obter chave PIX:",e); }
+        const r=await fetch("/api/chave-pix");
+        const d=await r.json();
+        chavePix=d.chave||""; nomeLoja=d.nome||""; cidade=d.cidade||""; telefoneFmt=d.telefone||chavePix;
+        document.getElementById("pixChave").textContent=telefoneFmt;
+        document.getElementById("pixNome").textContent=nomeLoja;
+        document.getElementById("pixCidade").textContent=cidade;
+      }catch(e){console.error("Erro ao carregar chave PIX:",e);}
     }
 
     async function carregarProdutos(){
-      const r = await fetch("/api/produtos", {cache:"no-store"});
-      const produtos = await r.json();
-      const el = document.getElementById("listaProdutos");
+      const r=await fetch("/api/produtos",{cache:"no-store"});
+      const produtos=await r.json();
+      const el=document.getElementById("listaProdutos");
       el.innerHTML="";
       produtos.filter(p=>Number(p.estoque)>0).forEach(p=>{
-        const img = p.imagem || "https://via.placeholder.com/600x600?text=Salgado";
-        el.innerHTML += `
-          <div class="card">
-            <div class="img-wrap"><img src="${img}" alt="${p.nome}" loading="lazy"></div>
-            <h3>${p.nome}</h3>
-            <div class="price">R$ ${moeda(p.preco)}</div>
-            <div class="stock">Estoque: ${p.estoque}</div>
-            <button class="btn" onclick="adicionar(${p.id},'${p.nome.replace(/'/g,'&#39;')}',${p.preco})">Adicionar</button>
-          </div>`;
+        const img=p.imagem||"https://via.placeholder.com/600x600?text=Salgado";
+        el.innerHTML+=`
+        <div class="card">
+          <div class="img-wrap"><img src="${img}" alt="${p.nome}"></div>
+          <h3>${p.nome}</h3>
+          <div class="price">R$ ${moeda(p.preco)}</div>
+          <div class="stock">Estoque: ${p.estoque}</div>
+          <button class="btn" onclick="adicionar(${p.id},'${p.nome.replace(/'/g,'&#39;')}',${p.preco})">Adicionar</button>
+        </div>`;
       });
     }
 
     function adicionar(id,nome,preco){
-      const item = carrinho.find(i=>i.id===id);
-      if(item) item.quantidade++; else carrinho.push({id,nome,preco,quantidade:1});
+      const item=carrinho.find(i=>i.id===id);
+      if(item)item.quantidade++; else carrinho.push({id,nome,preco,quantidade:1});
       render();
     }
 
     function render(){
-      const tb = document.getElementById("itensCarrinho");
+      const tb=document.getElementById("itensCarrinho");
       tb.innerHTML="";
       let total=0;
       carrinho.forEach(i=>{
         const sub=i.preco*i.quantidade; total+=sub;
-        tb.innerHTML += `<tr><td>${i.nome}</td><td>${i.quantidade}</td><td>R$ ${moeda(i.preco)}</td><td>R$ ${moeda(sub)}</td></tr>`;
+        tb.innerHTML+=`<tr><td>${i.nome}</td><td>${i.quantidade}</td><td>R$ ${moeda(i.preco)}</td><td>R$ ${moeda(sub)}</td></tr>`;
       });
-      document.getElementById("totalCarrinho").textContent = "Total: R$ "+moeda(total);
+      document.getElementById("totalCarrinho").textContent="Total: R$ "+moeda(total);
     }
 
     async function finalizarPedido(){
-      if(!carrinho.length) return alert("Carrinho vazio!");
-      const nome = document.getElementById("clienteNome").value.trim();
-      const endereco = document.getElementById("clienteEndereco").value.trim();
-      if(!nome||!endereco) return alert("Preencha seu nome e endereço.");
-      const total = carrinho.reduce((s,i)=>s+i.preco*i.quantidade,0);
-      _valor = Number(total.toFixed(2));
-      const pedido = {cliente:{nome,endereco},itens:carrinho,total:_valor};
-      const r = await fetch("/api/pedidos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(pedido)});
-      const p = await r.json();
-      const qrEl = document.getElementById("pixQr");
-      qrEl.innerHTML="";
-      new QRCode(qrEl,{text:p?.pix?.payload||"",width:220,height:220});
-      _payload=p?.pix?.payload||"";
-      document.getElementById("pagamento").style.display="block";
-      document.getElementById("pixChave").textContent = telefoneFmt;
-      carrinho=[];render();
+      if(!carrinho.length)return alert("Carrinho vazio!");
+      const nome=document.getElementById("clienteNome").value.trim();
+      const endereco=document.getElementById("clienteEndereco").value.trim();
+      const pagamento=document.getElementById("clientePagamento").value;
+      if(!nome||!endereco)return alert("Preencha seu nome e endereço.");
+
+      const total=carrinho.reduce((s,i)=>s+i.preco*i.quantidade,0);
+      _valor=Number(total.toFixed(2));
+
+      const pedido={cliente:{nome,endereco},itens:carrinho,total:_valor,pagamento};
+      const r=await fetch("/api/pedidos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(pedido)});
+      const salvo=await r.json();
+
+      if(pagamento==="PIX"&&salvo.pix){
+        const sec=document.getElementById("pagamento");
+        sec.style.display="block";
+        const qrEl=document.getElementById("pixQr");
+        qrEl.innerHTML="";
+        new QRCode(qrEl,{text:salvo.pix.payload,width:220,height:220});
+        _payload=salvo.pix.payload;
+        document.getElementById("pixChave").textContent=telefoneFmt;
+      }else{
+        document.getElementById("pagamento").style.display="none";
+      }
+
+      alert(`Pedido realizado!\nValor total: R$ ${moeda(_valor)}`);
+      carrinho=[]; render();
     }
 
-    function copiarChave(){navigator.clipboard.writeText(chavePix).then(()=>{showMsg("msgCopiado");});}
-    function copiarPayload(){navigator.clipboard.writeText(_payload).then(()=>{showMsg("msgCopiadoPayload");});}
-    function copiarValor(){navigator.clipboard.writeText("R$ "+moeda(_valor)).then(()=>{showMsg("msgCopiadoValor");});}
-    function showMsg(id){const e=document.getElementById(id);e.style.display="block";setTimeout(()=>e.style.display="none",2000);}
+    function copiarChave(){navigator.clipboard.writeText(chavePix).then(()=>showMsg());}
+    function copiarPayload(){navigator.clipboard.writeText(_payload).then(()=>showMsg());}
+    function showMsg(){const e=document.getElementById("msgCopiado");e.style.display="block";setTimeout(()=>e.style.display="none",2000);}
 
     document.addEventListener("DOMContentLoaded",()=>{carregarChavePix();carregarProdutos();});
   </script>

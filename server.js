@@ -109,8 +109,8 @@ function saveDB(db) {
 }
 
 /* -------------------------------- Config PIX -------------------------------- */
-const chavePix = "55160826000100";     // CNPJ sem máscara
-const nomeLoja = "RS LUBRIFICANTES";   // máx ~25 chars
+const chavePix = "99 988338981";     // telefone
+const nomeLoja = "SALGADOS RAYLENIZA";   // máx ~25 chars
 const cidade   = "SAMBAIBA";           // máx ~15 chars
 
 /* ----------------------------- Push Web (opcional) --------------------------- */
@@ -473,3 +473,4 @@ app.post("/api/restore", tokenOrBasic, (req, res) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+

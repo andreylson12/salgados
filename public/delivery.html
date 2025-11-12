@@ -4,140 +4,34 @@
   <meta charset="UTF-8" />
   <title>Salgados da Rayleniza – Delivery</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- PWA -->
-  <link rel="manifest" href="/manifest.json?v=7">
+  <link rel="manifest" href="/manifest.json?v=9">
   <meta name="theme-color" content="#0b0f1a">
-
-  <!-- iOS (Safari) -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Salgados da Rayleniza">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
   <style>
     :root{
-      --bg:#0b0f1a;
-      --panel:#0f172a;
-      --soft:#101827;
-      --text:#e2e8f0;
-      --muted:#94a3b8;
-      --brand:#ea580c;
-      --brand2:#f59e0b;
-      --ok:#22c55e;
-      --ok2:#16a34a;
-      --blue:#3b82f6;
-      --radius:14px;
-      --shadow:0 10px 26px rgba(0,0,0,.25);
+      --bg:#0b0f1a; --panel:#0f172a; --text:#e2e8f0; --muted:#94a3b8;
+      --brand:#ea580c; --blue:#3b82f6; --radius:14px; --shadow:0 10px 26px rgba(0,0,0,.25);
     }
-    *{box-sizing:border-box}
-    body{
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      margin:0; background:linear-gradient(160deg,#0b0f1a 0%,#0f172a 60%,#111827 100%); color:var(--text);
-    }
-
-    header{
-      background:linear-gradient(180deg,#0f172a 0%,#0b0f1a 100%);
-      color:#fff; padding:16px 14px; text-align:center; position:sticky; top:0; z-index:5;
-      border-bottom:1px solid #0b1220;
-    }
-    header h1{ margin:0; font-size:18px }
-    header p{ margin:4px 0 0; color:var(--muted); font-size:13px }
-
-    main{ padding:14px }
-
-    /* Lista de produtos (grid responsivo) */
-    .produtos{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
-      gap:12px;
-    }
-    @media (min-width:420px){
-      .produtos{ grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; }
-    }
-    @media (min-width:720px){
-      .produtos{ grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px; }
-    }
-
-    .card{
-      background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%);
-      border:1px solid #0b1220;
-      border-radius:var(--radius);
-      padding:10px;
-      box-shadow:var(--shadow);
-      display:flex; flex-direction:column; gap:8px;
-      min-height:260px;
-    }
-
-    .img-wrap{
-      width:100%;
-      aspect-ratio: 4 / 3;
-      background:#0b1220;
-      border-radius:10px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-    }
-    .img-wrap img{
-      max-width:100%;
-      max-height:100%;
-      object-fit:contain;
-      display:block;
-      border-radius:8px;
-    }
-
-    .card h3{
-      margin:0; font-size:15px; line-height:1.2; min-height:2.4em;
-      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-    }
-    .card .price{ font-weight:700; color:#ffedd5 }
-    .stock{ font-size:12px; color:var(--muted) }
-
-    .btn{
-      background:linear-gradient(180deg,var(--brand) 0%,#c2410c 100%);
-      color:#fff; border:none; padding:10px 12px; border-radius:12px; cursor:pointer; font-weight:600;
-    }
-    .btn:hover{ filter:brightness(.98) }
-    .btn[disabled]{ opacity:.5; cursor:not-allowed }
-
-    /* Carrinho/Pagamento painéis */
-    #carrinho, #pagamento{
-      background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%);
-      border:1px solid #0b1220; color:var(--text);
-      padding:14px; border-radius:var(--radius); margin:16px 0; box-shadow:var(--shadow);
-    }
-    #carrinho h2, #pagamento h2{ margin:0 0 10px }
-    table{ width:100%; border-collapse:collapse; margin-bottom:8px; border-radius:12px; overflow:hidden }
-    thead th{
-      background:#0e1a2c; color:#cbd5e1; font-size:12px; letter-spacing:.02em; text-transform:uppercase;
-      padding:10px; text-align:center;
-    }
-    td{ padding:10px; border-bottom:1px solid #0e1a2c; text-align:center; color:#e2e8f0 }
-    tr:nth-child(2n) td{ background:#0d1728 }
-
-    .btn-finalizar{
-      width:100%; padding:12px;
-      background:linear-gradient(180deg,var(--blue),#2563eb); color:#fff; border:none; border-radius:12px; font-size:16px; cursor:pointer;
-    }
+    body{margin:0;background:linear-gradient(160deg,#0b0f1a 0%,#0f172a 60%,#111827 100%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    header{background:linear-gradient(180deg,#0f172a 0%,#0b0f1a 100%);padding:16px 14px;text-align:center;position:sticky;top:0;z-index:5;border-bottom:1px solid #0b1220}
+    header h1{margin:0;font-size:18px} header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    main{padding:14px}
+    .produtos{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+    .card{background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%);border:1px solid #0b1220;border-radius:var(--radius);padding:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;min-height:260px}
+    .img-wrap{width:100%;aspect-ratio:4/3;background:#0b1220;border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .img-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block;border-radius:8px}
+    .card h3{margin:0;font-size:15px;line-height:1.2;min-height:2.4em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .card .price{font-weight:700;color:#ffedd5}
+    .stock{font-size:12px;color:var(--muted)}
+    .btn{background:linear-gradient(180deg,var(--brand) 0%,#c2410c 100%);color:#fff;border:none;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:600}
+    .btn:hover{filter:brightness(.98)} .btn[disabled]{opacity:.5;cursor:not-allowed}
+    #carrinho,#pagamento{background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%);border:1px solid #0b1220;color:var(--text);padding:14px;border-radius:var(--radius);margin:16px 0;box-shadow:var(--shadow)}
+    #pagamento{text-align:center;display:none}
+    #pixQr{width:220px;height:220px;margin:10px auto;background:#fff;border-radius:12px;padding:6px}
+    .btn-finalizar{width:100%;padding:12px;background:linear-gradient(180deg,var(--blue),#2563eb);color:#fff;border:none;border-radius:12px;font-size:16px;cursor:pointer}
     .btn-finalizar[disabled]{opacity:.65;cursor:not-allowed}
-
-    input,select{
-      width:100%; padding:12px; margin:6px 0; border:1px solid #101827; border-radius:12px; background:#0b1220; color:#fff;
-    }
-    input::placeholder{ color:#94a3b84d }
-
-    #pagamento{text-align:center; display:none}
-    #pixQr{width:220px;height:220px;margin:10px auto;position:relative;background:#fff;border-radius:12px;padding:6px}
-    #pixTimer{margin:6px auto 0;font-weight:bold;color:#fda4af}
-    .row-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px}
     .muted{color:var(--muted);font-size:13px;margin-top:6px}
-    .expired{color:#fda4af;font-weight:bold}
-    details{max-width:560px;margin:10px auto;color:#cbd5e1}
-    details pre{white-space:pre-wrap;word-wrap:break-word;text-align:left;background:#0b1220;border:1px solid #0e1a2c;padding:10px;border-radius:10px;color:#e2e8f0}
   </style>
-
-  <!-- QR Code -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 </head>
 <body>
@@ -152,9 +46,7 @@
     <section id="carrinho">
       <h2>🛒 Seu Carrinho</h2>
       <table>
-        <thead>
-          <tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Total</th></tr>
-        </thead>
+        <thead><tr><th>Produto</th><th>Qtd</th><th>Preço</th><th>Total</th></tr></thead>
         <tbody id="itensCarrinho"></tbody>
       </table>
       <h3 id="totalCarrinho">Total: R$ 0,00</h3>
@@ -170,127 +62,69 @@
       <button id="btnFinalizar" class="btn-finalizar" onclick="finalizarPedido()">Finalizar Pedido</button>
     </section>
 
-    <!-- PIX -->
     <section id="pagamento">
       <h2>💳 Pagamento via PIX</h2>
       <div id="pixQr"></div>
       <p id="pixTimer" class="muted"></p>
-
-      <!-- TROCA: label e conteúdo para TELEFONE -->
-      <p>Chave PIX (Telefone): <strong id="pixChave">55 99 98833-8981</strong></p>
-
+      <p>Chave PIX (Telefone): <strong id="pixChave"></strong></p>
+      <p class="muted">Nome: <span id="pixNome"></span> — Cidade: <span id="pixCidade"></span></p>
       <div class="row-btns">
         <button id="btnCopiarChave" class="btn" onclick="copiarChave()">📋 Copiar chave PIX</button>
-        <button id="btnCopiarPayload" class="btn" onclick="copiarPayload()">📋 Copiar código PIX (copia e cola)</button>
+        <button id="btnCopiarPayload" class="btn" onclick="copiarPayload()">📋 Copiar código PIX</button>
         <button id="btnCopiarValor" class="btn" onclick="copiarValor()">📋 Copiar valor</button>
       </div>
-      <p id="msgCopiado" style="display:none;color:#22c55e">✅ Chave copiada!</p>
-      <p id="msgCopiadoPayload" style="display:none;color:#22c55e">✅ Código PIX copiado!</p>
-      <p id="msgCopiadoValor" style="display:none;color:#22c55e">✅ Valor copiado!</p>
-      <details>
-        <summary>Ver payload EMV</summary>
-        <pre id="pixPayload"></pre>
-      </details>
-      <p class="muted">Se o QR expirar, finalize o pedido novamente para gerar um novo.</p>
+      <p id="msgCopiado" style="display:none;color:#22c55e">✅ Copiado!</p>
     </section>
   </main>
 
-  <div id="iosHint" style="display:none;position:fixed;left:10px;right:10px;bottom:14px;z-index:9998;background:#fff;border:1px solid #eee;border-radius:10px;padding:10px 12px;box-shadow:0 4px 14px rgba(0,0,0,.12);font-size:14px;color:#333">
-    Para instalar no iPhone: toque em <b>Compartilhar</b> → <b>Adicionar à Tela de Início</b>.
-  </div>
-
   <script>
-    // ======= CONFIG EDITÁVEL: TELEFONE =======
-    // Telefone como chave Pix (55 + DDD + número) sem espaços:  "559988338981"
-    const PIX_CHAVE_TEL = "559988338981";
-    const MERCHANT_NAME = "Salgados da Rayleniza";
-    const MERCHANT_CITY = "SAMBAIBA";
-    const QR_EXPIRY_MINUTES = 10;
-    // =========================================
-
-    // Estado do PIX
-    let _lastPixPayload = "";
-    let _lastTotal = 0;
-    let _qrTimerId = null;
-    let _qrExpireAt = 0;
-
-    // ===== Helpers (telefone) =====
-    function formatPhone55(raw){
-      const d = String(raw||"").replace(/\D/g,"");
-      if (d.startsWith("55") && (d.length === 13 || d.length === 14)) {
-        const base = d.slice(2);
-        const ddd = base.slice(0,2);
-        const num = base.slice(2);
-        return `(${ddd}) ${num.slice(0,5)}-${num.slice(5)}`;
-      }
-      return raw;
-    }
-    function isValidPhone55(raw){
-      const d = String(raw||"").replace(/\D/g,"");
-      // 55 + DDD(2) + número(9) = 13 dígitos
-      return d.startsWith("55") && (d.length === 13 || d.length === 14);
-    }
-
-    // ===== Helpers EMV =====
-    const pad2 = (n) => String(n).padStart(2,'0');
-    function tlv(id, value) { const v = String(value ?? ""); return id + pad2(v.length) + v; }
-    function sanitizeText(txt, max) { return String(txt||"").normalize("NFKD").replace(/[^\x20-\x7E]/g,"").slice(0,max); }
-    function crc16CCITT(str) {
-      let crc = 0xFFFF;
-      for (let i = 0; i < str.length; i++) {
-        crc ^= (str.charCodeAt(i) & 0xFF) << 8;
-        for (let j = 0; j < 8; j++) {
-          if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
-          else crc = crc << 1;
-          crc &= 0xFFFF;
-        }
-      }
-      return crc.toString(16).toUpperCase().padStart(4,'0');
-    }
-
-    function buildPixPayload({ chave, nome, cidade, valor, txid, descricao }) {
-      const payloadFormat = tlv("00", "01");
-      const poiMethod    = tlv("01", "11");
-      const gui   = tlv("00", "br.gov.bcb.pix");
-      const k     = tlv("01", chave);
-      const desc  = descricao ? tlv("02", sanitizeText(descricao, 99)) : "";
-      const mai   = tlv("26", gui + k + desc);
-      const mcc      = tlv("52", "0000");
-      const currency = tlv("53", "986");
-      const amount   = tlv("54", Number(valor).toFixed(2));
-      const country  = tlv("58", "BR");
-      const mName    = tlv("59", sanitizeText(nome, 25));
-      const mCity    = tlv("60", sanitizeText(cidade, 15));
-      const addData  = tlv("62", tlv("05", sanitizeText(txid, 25)));
-      const semCRC = payloadFormat + poiMethod + mai + mcc + currency + amount + country + mName + mCity + addData + "6304";
-      const crc = crc16CCITT(semCRC);
-      return semCRC + crc;
-    }
-
-    // ====== Loja ======
+    // Estado global
     let carrinho = [];
+    let chavePix = "";     // vem do servidor
+    let nomeLoja = "";
+    let cidade = "";
+    let _payload = "";
+    let _valor = 0;
+
     const moeda = n => Number(n).toFixed(2).replace('.', ',');
 
+    // ---------- Carregar dados PIX do servidor ----------
+    async function carregarChavePix(){
+      try{
+        const r = await fetch("/api/chave-pix", {cache:"no-store"});
+        const d = await r.json();
+        chavePix = String(d.chave || "").replace(/\s+/g,""); // tira espaços
+        nomeLoja = d.nome || "";
+        cidade = d.cidade || "";
+
+        // exibição amigável se for telefone 55 + DDD + número
+        document.getElementById("pixChave").textContent =
+          (chavePix.startsWith("55") && (chavePix.length===13 || chavePix.length===14))
+          ? `(${chavePix.slice(2,4)}) ${chavePix.slice(4,9)}-${chavePix.slice(9)}`
+          : chavePix;
+
+        document.getElementById("pixNome").textContent = nomeLoja;
+        document.getElementById("pixCidade").textContent = cidade;
+      }catch(e){ console.error("Erro ao obter chave PIX:", e); }
+    }
+
+    // ---------- Produtos ----------
     async function carregarProdutos(){
-      const res = await fetch("/api/produtos", { cache:"no-store" });
-      const produtos = await res.json();
-      const el = document.getElementById("listaProdutos"); el.innerHTML = "";
-      produtos
-        .filter(p => Number(p.estoque) > 0)
-        .forEach(p=>{
-          const img = p.imagem || "https://via.placeholder.com/600x600?text=Salgado";
-          const div = document.createElement("div"); div.className="card";
-          div.innerHTML = `
-            <div class="img-wrap">
-              <img src="${img}" alt="${p.nome}" loading="lazy">
-            </div>
+      const r = await fetch("/api/produtos", {cache:"no-store"});
+      const produtos = await r.json();
+      const el = document.getElementById("listaProdutos");
+      el.innerHTML = "";
+      produtos.filter(p=>Number(p.estoque)>0).forEach(p=>{
+        const img = p.imagem || "https://via.placeholder.com/600x600?text=Salgado";
+        el.innerHTML += `
+          <div class="card">
+            <div class="img-wrap"><img src="${img}" alt="${p.nome}" loading="lazy"></div>
             <h3>${p.nome}</h3>
             <div class="price">R$ ${moeda(p.preco)}</div>
             <div class="stock">Estoque: ${p.estoque}</div>
-            <button class="btn" onclick="adicionar(${p.id}, '${p.nome.replace(/'/g,'&#39;')}', ${Number(p.preco)})">Adicionar</button>
-          `;
-          el.appendChild(div);
-        });
+            <button class="btn" onclick="adicionar(${p.id},'${p.nome.replace(/'/g,'&#39;')}',${Number(p.preco)})">Adicionar</button>
+          </div>`;
+      });
     }
 
     function adicionar(id,nome,preco){
@@ -300,181 +134,70 @@
     }
 
     function render(){
-      const tb = document.getElementById("itensCarrinho"); tb.innerHTML = "";
+      const tb = document.getElementById("itensCarrinho");
+      tb.innerHTML = "";
       let total = 0;
       carrinho.forEach(i=>{
         const sub = i.preco*i.quantidade; total += sub;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i.nome}</td><td>${i.quantidade}</td><td>R$ ${moeda(i.preco)}</td><td>R$ ${moeda(sub)}</td>`;
-        tb.appendChild(tr);
+        tb.innerHTML += `<tr><td>${i.nome}</td><td>${i.quantidade}</td><td>R$ ${moeda(i.preco)}</td><td>R$ ${moeda(sub)}</td></tr>`;
       });
-      document.getElementById("totalCarrinho").textContent = "Total: R$ " + moeda(total);
+      document.getElementById("totalCarrinho").textContent = "Total: R$ "+moeda(total);
     }
 
-    // ===== Timer do QR =====
-    function setPixUiEnabled(enabled){
-      document.getElementById("btnCopiarChave").disabled   = !enabled;
-      document.getElementById("btnCopiarPayload").disabled = !enabled;
-      document.getElementById("btnCopiarValor").disabled   = !enabled;
-    }
-
-    function startQrTimer(minutes){
-      if (_qrTimerId){ clearInterval(_qrTimerId); _qrTimerId = null; }
-      const msTotal = minutes * 60 * 1000;
-      _qrExpireAt = Date.now() + msTotal;
-      setPixUiEnabled(true);
-      const timerEl = document.getElementById("pixTimer");
-      const tick = ()=>{
-        const remain = _qrExpireAt - Date.now();
-        if (remain <= 0){
-          clearInterval(_qrTimerId); _qrTimerId = null;
-          timerEl.textContent = "QR expirado";
-          timerEl.classList.add("expired");
-          setPixUiEnabled(false);
-          return;
-        }
-        const s = Math.floor(remain/1000);
-        const mm = String(Math.floor(s/60)).padStart(2,"0");
-        const ss = String(s%60).padStart(2,"0");
-        timerEl.textContent = `Expira em ${mm}:${ss}`;
-        timerEl.classList.remove("expired");
-      };
-      tick();
-      _qrTimerId = setInterval(tick, 1000);
-    }
-
+    // ---------- Finalizar (usa PIX do servidor) ----------
     async function finalizarPedido(){
       if(!carrinho.length) return alert("Carrinho vazio!");
-      const btn = document.getElementById("btnFinalizar"); btn.disabled = true;
-      try{
-        const nome = document.getElementById("clienteNome").value.trim();
-        const endereco = document.getElementById("clienteEndereco").value.trim();
-        const pagamento = document.getElementById("clientePagamento").value;
-        if(!nome || !endereco) return alert("Preencha seu nome e endereço.");
+      const nome = document.getElementById("clienteNome").value.trim();
+      const endereco = document.getElementById("clienteEndereco").value.trim();
+      const pagamento = document.getElementById("clientePagamento").value;
+      if(!nome||!endereco) return alert("Preencha seu nome e endereço.");
 
-        // valida telefone "55 + DDD + número"
-        if (pagamento === "PIX" && !isValidPhone55(PIX_CHAVE_TEL)) {
-          return alert("Chave PIX (telefone) inválida. Verifique a configuração.");
-        }
+      const total = carrinho.reduce((s,i)=>s+i.preco*i.quantidade,0);
+      _valor = Number(total.toFixed(2));
 
-        const total = carrinho.reduce((s,i)=>s+i.preco*i.quantidade,0);
-        _lastTotal = Number(total.toFixed(2));
+      const pedido = { cliente:{nome,endereco}, itens:carrinho, total:_valor, pagamento };
 
-        // envia pedido pro backend (ele também gera QR)
-        const pedido = {
-          id: Date.now(),
-          cliente: { nome, endereco },
-          itens: carrinho.map(i=>({ id:i.id, nome:i.nome, preco:i.preco, quantidade:i.quantidade })),
-          total: _lastTotal,
-          pagamento,
-          pix: pagamento === "PIX" ? { tipoChave: "telefone", chave: PIX_CHAVE_TEL } : null,
-          status: "Pendente"
-        };
-
-        const res = await fetch("/api/pedidos", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify(pedido)
-        });
-        const salvo = await res.json();
-
-        if (pagamento === "PIX") {
-          const sec = document.getElementById("pagamento");
-          sec.style.display = "block";
-
-          // mostrar telefone formatado
-          document.getElementById("pixChave").textContent = formatPhone55(PIX_CHAVE_TEL);
-
-          // usa o payload retornado pelo servidor se existir; senão monta local
-          const txid = ("SR" + (salvo?.id ?? pedido.id)).slice(0,25);
-          const descricao = `Pedido ${(salvo?.id ?? pedido.id)}`;
-          const payload = salvo?.pix?.payload || buildPixPayload({
-            chave: PIX_CHAVE_TEL,
-            nome: MERCHANT_NAME,
-            cidade: MERCHANT_CITY,
-            valor: _lastTotal,
-            txid,
-            descricao
-          });
-
-          _lastPixPayload = payload;
-
-          const qrEl = document.getElementById("pixQr");
-          qrEl.innerHTML = "";
-          new QRCode(qrEl, { text: payload, width: 220, height: 220 });
-
-          document.getElementById("pixPayload").textContent = payload;
-
-          startQrTimer(QR_EXPIRY_MINUTES);
-        } else {
-          document.getElementById("pagamento").style.display="none";
-          if (_qrTimerId){ clearInterval(_qrTimerId); _qrTimerId = null; }
-        }
-
-        alert("Pedido realizado! ID: " + (salvo.id ?? pedido.id) + " — Total: R$ " + moeda(_lastTotal));
-        carrinho = []; render();
-      }catch(e){
-        console.error(e);
-        alert("Erro ao finalizar. Tente novamente.");
-      }finally{
-        btn.disabled = false;
-      }
-    }
-
-    function copiarChave(){
-      if (Date.now() > _qrExpireAt) return;
-      const raw = PIX_CHAVE_TEL;
-      navigator.clipboard.writeText(raw).then(()=>{
-        const msg = document.getElementById("msgCopiado"); msg.style.display="block";
-        setTimeout(()=>msg.style.display="none", 3000);
+      const res = await fetch("/api/pedidos", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(pedido)
       });
+      const salvo = await res.json();
+
+      if (pagamento === "PIX" && salvo?.pix?.payload){
+        const sec = document.getElementById("pagamento");
+        sec.style.display = "block";
+
+        const qrEl = document.getElementById("pixQr");
+        qrEl.innerHTML = "";
+        new QRCode(qrEl, { text: salvo.pix.payload, width: 220, height: 220 });
+
+        _payload = salvo.pix.payload;
+
+        // timer simples (visual)
+        const t0 = Date.now(), ms = 10*60*1000;
+        const label = document.getElementById("pixTimer");
+        const id = setInterval(()=>{
+          const rest = ms - (Date.now()-t0);
+          if(rest<=0){ clearInterval(id); label.textContent = "QR expirado"; return; }
+          const s = Math.floor(rest/1000); const mm = String(Math.floor(s/60)).padStart(2,"0"); const ss = String(s%60).padStart(2,"0");
+          label.textContent = `Expira em ${mm}:${ss}`;
+        },1000);
+      } else {
+        document.getElementById("pagamento").style.display="none";
+      }
+
+      carrinho = []; render();
     }
 
-    function copiarPayload(){
-      if (Date.now() > _qrExpireAt) return;
-      if(!_lastPixPayload){
-        const txt = document.getElementById("pixPayload").textContent.trim();
-        if (txt) _lastPixPayload = txt;
-      }
-      if(!_lastPixPayload){
-        alert("Gere o QR (finalize o pedido com PIX) antes de copiar o código.");
-        return;
-      }
-      navigator.clipboard.writeText(_lastPixPayload).then(()=>{
-        const msg = document.getElementById("msgCopiadoPayload"); msg.style.display="block";
-        setTimeout(()=>msg.style.display="none", 3000);
-      });
-    }
+    // ---------- Copiar ----------
+    function copiarChave(){ navigator.clipboard.writeText(chavePix); ok(); }
+    function copiarPayload(){ if(_payload) navigator.clipboard.writeText(_payload).then(ok); }
+    function copiarValor(){ navigator.clipboard.writeText("R$ "+moeda(_valor)).then(ok); }
+    function ok(){ const e=document.getElementById("msgCopiado"); e.style.display="block"; setTimeout(()=>e.style.display="none",2000); }
 
-    function copiarValor(){
-      if (Date.now() > _qrExpireAt) return;
-      const texto = "R$ " + moeda(_lastTotal);
-      navigator.clipboard.writeText(texto).then(()=>{
-        const msg = document.getElementById("msgCopiadoValor"); msg.style.display="block";
-        setTimeout(()=>msg.style.display="none", 3000);
-      });
-    }
-
-    // ====== PWA (sem botão) ======
-    (function setupPWA(){
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => { navigator.serviceWorker.register("/service-worker.js"); });
-      }
-      // Dica iOS
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-      if (isIOS && !isStandalone) {
-        const hint = document.getElementById("iosHint");
-        if (hint) hint.style.display = "block";
-        setTimeout(()=>{ if(hint) hint.style.display="none"; }, 8000);
-      }
-    })();
-
-    document.addEventListener("DOMContentLoaded", ()=>{
-      carregarProdutos();
-      // Mostra a chave formatada já na abertura
-      document.getElementById("pixChave").textContent = formatPhone55(PIX_CHAVE_TEL);
-    });
+    // ---------- Boot ----------
+    document.addEventListener("DOMContentLoaded", ()=>{ carregarChavePix(); carregarProdutos(); });
   </script>
 </body>
 </html>

@@ -31,6 +31,7 @@ function basicAuth(req, res, next) {
   return res.status(401).send("Autenticação requerida");
 }
 
+// 👉 além do Basic Auth, aceita header X-Admin-Token: <DEBUG_TOKEN>
 function tokenOrBasic(req, res, next) {
   const t = req.headers["x-admin-token"];
   if (t && String(t) === String(DEBUG_TOKEN)) return next();
@@ -51,15 +52,17 @@ app.use(
 /* ------------------------------ Arquivos estáticos --------------------------- */
 app.use(
   express.static(path.join(__dirname, "public"), {
-    index: false,
+    index: false, // impede servir index.html automaticamente
   })
 );
 
 /* -------------------------- Rotas de páginas (UI) ---------------------------- */
+// 🔐 Painel administrativo protegido
 app.get(["/", "/index", "/index.html"], basicAuth, (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// Página pública (sem senha)
 app.get(["/delivery", "/delivery.html"], (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "delivery.html"));
 });
@@ -106,34 +109,11 @@ function saveDB(db) {
 }
 
 /* -------------------------------- Config PIX -------------------------------- */
-// Normaliza a chave PIX (telefone, CPF, etc.)
-function normalizePixKey(raw) {
-  if (!raw) return "";
-  const s = String(raw).trim();
-  if (s.includes("@") || s.includes("-") || s.length > 20) return s;
-  const digits = s.replace(/\D+/g, "");
-  if (digits.length === 11) return "55" + digits;
-  if (digits.startsWith("55") && (digits.length === 13 || digits.length === 14)) return digits;
-  return digits;
-}
-
-// Formata para exibir bonito no front
-function formatPhoneIfAny(pixKey) {
-  const d = String(pixKey || "");
-  if (d.startsWith("55") && (d.length === 13 || d.length === 14)) {
-    const base = d.slice(2);
-    const ddd = base.slice(0, 2);
-    const num = base.slice(2);
-    return `(${ddd}) ${num.slice(0,5)}-${num.slice(5)}`;
-  }
-  return null;
-}
-
-// Chave PIX configurada
-const PIX_KEY_RAW = "99 98833 8981";
-const chavePix = normalizePixKey(PIX_KEY_RAW);
-const nomeLoja = "SALGADOS RAYLENIZA";
-const cidade   = "SAMBAIBA";
+// >>> TROCA: chave PIX agora é TELEFONE no formato oficial (55 + DDD + número, sem espaços)
+// Ex.: (99) 98833-8981  -> "559988338981"
+const chavePix = "559988338981";      // telefone como chave Pix
+const nomeLoja = "SALGADOS RAYLENIZA";   // máx ~25 chars
+const cidade   = "SAMBAIBA";             // máx ~15 chars
 
 /* ----------------------------- Push Web (opcional) --------------------------- */
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY  || "";
@@ -146,7 +126,65 @@ if (webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
   console.warn("[web-push] sem VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY — push web desativado.");
 }
 
-/* --------------------------- Telegram (notificação confiável) ------------------- */
+async function sendPushToAll(title, body, data = {}) {
+  if (!webpush || !VAPID_PUBLIC || !VAPID_PRIVATE) return;
+  const db = loadDB();
+  const subs = db.pushSubs || [];
+  if (!subs.length) return;
+
+  const payload = JSON.stringify({ title, body, data });
+  const stillValid = [];
+
+  await Promise.all(
+    subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(sub, payload);
+        stillValid.push(sub);
+      } catch (err) {
+        console.warn("[push] assinatura removida:", err?.statusCode);
+      }
+    })
+  );
+
+  if (stillValid.length !== subs.length) {
+    db.pushSubs = stillValid;
+    saveDB(db);
+  }
+}
+
+/* --------------------------- Rotas de Push (opcional) ----------------------- */
+app.get("/api/push/public-key", (_req, res) => {
+  res.json({ publicKey: VAPID_PUBLIC || "" });
+});
+app.post("/api/push/subscribe", (req, res) => {
+  try {
+    const sub = req.body;
+    if (!sub?.endpoint) return res.status(400).json({ error: "assinatura inválida" });
+    const db = loadDB();
+    const exists = db.pushSubs.some((s) => s.endpoint === sub.endpoint);
+    if (!exists) db.pushSubs.push(sub);
+    saveDB(db);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "falha ao salvar assinatura" });
+  }
+});
+app.post("/api/push/unsubscribe", (req, res) => {
+  try {
+    const { endpoint } = req.body || {};
+    if (!endpoint) return res.status(400).json({ error: "endpoint ausente" });
+    const db = loadDB();
+    db.pushSubs = (db.pushSubs || []).filter((s) => s.endpoint !== endpoint);
+    saveDB(db);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "falha ao remover assinatura" });
+  }
+});
+
+/* ----------------------- Telegram (notificação confiável) ------------------- */
 const _fetch = (...args) =>
   (globalThis.fetch
     ? globalThis.fetch(...args)
@@ -171,12 +209,8 @@ async function sendTelegramMessage(text) {
 
 /* -------------------------------- API PIX ----------------------------------- */
 app.get("/api/chave-pix", (_req, res) => {
-  res.json({
-    chave: chavePix,
-    nome: nomeLoja,
-    cidade,
-    telefone: formatPhoneIfAny(chavePix)
-  });
+  // devolve a chave (telefone) e metadados
+  res.json({ chave: chavePix, nome: nomeLoja, cidade });
 });
 
 app.get("/api/pix/:valor/:txid?", async (req, res) => {
@@ -189,7 +223,7 @@ app.get("/api/pix/:valor/:txid?", async (req, res) => {
     const txid = (req.params.txid || "PIX" + Date.now()).slice(0, 25);
     const qrCodePix = QrCodePix({
       version: "01",
-      key: chavePix,
+      key: chavePix, // usa a chave telefone
       name: nomeLoja,
       city: cidade,
       transactionId: txid,
@@ -206,11 +240,13 @@ app.get("/api/pix/:valor/:txid?", async (req, res) => {
 });
 
 /* ------------------------------- Produtos ----------------------------------- */
+// GET público
 app.get("/api/produtos", (_req, res) => {
   const db = loadDB();
   res.json(db.produtos);
 });
 
+// Admin (usa tokenOrBasic)
 app.post("/api/produtos", tokenOrBasic, (req, res) => {
   const db = loadDB();
   const novo = { ...req.body, id: Date.now() };
@@ -221,23 +257,107 @@ app.post("/api/produtos", tokenOrBasic, (req, res) => {
 app.delete("/api/produtos/:id", tokenOrBasic, (req, res) => {
   const db = loadDB();
   const id = Number(req.params.id);
+  const before = db.produtos.length;
   db.produtos = db.produtos.filter((p) => p.id !== id);
+  saveDB(db);
+  if (db.produtos.length === before) {
+    return res.status(404).json({ error: "Produto não encontrado" });
+  }
+  res.json({ success: true });
+});
+
+function updateProdutoById(db, id, patch) {
+  id = Number(id);
+  const idx = db.produtos.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  const base = db.produtos[idx];
+  const upd = {
+    ...base,
+    ...(patch.nome    !== undefined ? { nome: String(patch.nome) } : {}),
+    ...(patch.preco   !== undefined ? { preco: Number(patch.preco) || 0 } : {}),
+    ...(patch.estoque !== undefined ? { estoque: parseInt(patch.estoque) || 0 } : {}),
+    ...(patch.imagem  !== undefined ? { imagem: patch.imagem || "" } : {}),
+  };
+  db.produtos[idx] = upd;
+  saveDB(db);
+  return upd;
+}
+
+app.patch("/api/produtos/:id", tokenOrBasic, (req, res) => {
+  const db = loadDB();
+  const upd = updateProdutoById(db, req.params.id, req.body || {});
+  if (!upd) return res.status(404).json({ error: "Produto não encontrado" });
+  res.json(upd);
+});
+app.put("/api/produtos/:id", tokenOrBasic, (req, res) => {
+  const db = loadDB();
+  const upd = updateProdutoById(db, req.params.id, req.body || {});
+  if (!upd) return res.status(404).json({ error: "Produto não encontrado" });
+  res.json(upd);
+});
+app.post("/api/produtos/update", tokenOrBasic, (req, res) => {
+  const { id, ...rest } = req.body || {};
+  if (!id) return res.status(400).json({ error: "id obrigatório" });
+  const db = loadDB();
+  const upd = updateProdutoById(db, id, rest);
+  if (!upd) return res.status(404).json({ error: "Produto não encontrado" });
+  res.json(upd);
+});
+
+/* -------------------------------- Pedidos ----------------------------------- */
+// Admin
+app.get("/api/pedidos", tokenOrBasic, (_req, res) => {
+  const db = loadDB();
+  res.json(db.pedidos);
+});
+app.get("/api/pedidos/:id", tokenOrBasic, (req, res) => {
+  const db = loadDB();
+  const id = Number(req.params.id);
+  const pedido = db.pedidos.find((p) => p.id === id);
+  if (!pedido) return res.status(404).json({ error: "Pedido não encontrado" });
+  res.json(pedido);
+});
+app.put("/api/pedidos/:id/status", tokenOrBasic, (req, res) => {
+  const db = loadDB();
+  const id = Number(req.params.id);
+  const pedido = db.pedidos.find((p) => p.id === id);
+  if (!pedido) return res.status(404).json({ error: "Pedido não encontrado" });
+  pedido.status = req.body.status || pedido.status;
+  saveDB(db);
+  sendTelegramMessage(`🔔 Pedido #${id} atualizado para: <b>${pedido.status}</b>`).catch(() => {});
+  res.json(pedido);
+});
+app.delete("/api/pedidos/:id", tokenOrBasic, (req, res) => {
+  const db = loadDB();
+  const id = Number(req.params.id);
+  db.pedidos = db.pedidos.filter((p) => p.id !== id);
   saveDB(db);
   res.json({ success: true });
 });
 
-/* -------------------------------- Pedidos ----------------------------------- */
+// Público
 app.post("/api/pedidos", async (req, res) => {
   const db = loadDB();
   const pedido = { ...req.body, id: Date.now(), status: "Pendente" };
 
+  if (Array.isArray(pedido.itens) && db.produtos.length) {
+    for (const prod of db.produtos) {
+      const item = pedido.itens.find((i) => i.id === prod.id);
+      if (item) {
+        prod.estoque = Math.max(0, Number(prod.estoque || 0) - Number(item.quantidade || 0));
+      }
+    }
+    saveDB(db);
+  }
+
   try {
     const rawTotal = String(pedido.total).replace(",", ".");
     const valor = Number(rawTotal);
+    if (!Number.isFinite(valor) || valor < 0.01) throw new Error("Valor do pedido inválido");
     const txid = ("PED" + pedido.id).slice(0, 25);
     const qrCodePix = QrCodePix({
       version: "01",
-      key: chavePix,
+      key: chavePix, // usa a chave telefone
       name: nomeLoja,
       city: cidade,
       transactionId: txid,
@@ -256,7 +376,101 @@ app.post("/api/pedidos", async (req, res) => {
 
   db.pedidos.push(pedido);
   saveDB(db);
+
+  const nome = pedido?.cliente?.nome || "Cliente";
+  const endereco = pedido?.cliente?.endereco || "-";
+  const itensTxt = (pedido.itens || []).map((i) => `${i.nome} x${i.quantidade}`).join(", ");
+  const totalBR = Number(pedido.total).toFixed(2).replace(".", ",");
+
+  sendTelegramMessage(
+    `📦 <b>Novo pedido</b>\n` +
+      `#${pedido.id}\n` +
+      `👤 ${nome}\n` +
+      `📍 ${endereco}\n` +
+      `🧾 ${itensTxt || "-"}\n` +
+      `💰 R$ ${totalBR}\n` +
+      `${pedido.pix ? "💳 PIX" : "💵 Outro"}`
+  ).catch(() => {});
+  sendPushToAll("Novo pedido!", `#${pedido.id} · ${nome} · R$ ${totalBR}`, { id: pedido.id }).catch(() => {});
+
   res.json(pedido);
+});
+
+/* ---------------- Debug/Backup/Restore (protegidos por token) --------------- */
+app.get("/api/debug-db", tokenOrBasic, (req, res) => {
+  const token = req.query.token;
+  if (token !== DEBUG_TOKEN) return res.status(403).json({ error: "Token inválido." });
+  try {
+    const db = loadDB();
+    res.json(db);
+  } catch (e) {
+    res.status(500).json({ error: "Erro ao ler DB", details: e.message });
+  }
+});
+app.get("/api/backup", tokenOrBasic, (req, res) => {
+  const token = req.query.token;
+  if (token !== DEBUG_TOKEN) return res.status(403).json({ error: "Token inválido." });
+  try {
+    const db = loadDB();
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    res.setHeader("Content-Disposition", `attachment; filename=db-backup-${ts}.json`);
+    res.setHeader("Content-Type", "application/json");
+    res.send(JSON.stringify(db, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao gerar backup", detalhe: err.message });
+  }
+});
+app.post("/api/restore", tokenOrBasic, (req, res) => {
+  const token = req.query.token;
+  if (token !== DEBUG_TOKEN) return res.status(403).json({ error: "Token inválido." });
+
+  const incoming = req.body?.db && typeof req.body.db === "object" ? req.body.db : req.body;
+  const data = ensureDBShape(incoming);
+  if (!Array.isArray(data.produtos) || !Array.isArray(data.pedidos) || !Array.isArray(data.pushSubs)) {
+    return res.status(400).json({ error: "Formato inválido." });
+  }
+
+  try {
+    const current = loadDB();
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const backupPath = DB_FILE + ".bak-" + ts;
+    fs.copyFileSync(DB_FILE, backupPath);
+
+    const byId = (arr) => Object.fromEntries((arr || []).map(x => [String(x.id), x]));
+    const mergeById = (base, inc) => {
+      const map = byId(base);
+      for (const item of inc || []) map[String(item.id)] = item;
+      return Object.values(map);
+    };
+    const uniqBy = (arr, keyFn) => {
+      const seen = new Set(); const out = [];
+      for (const v of arr || []) { const k = keyFn(v); if (!seen.has(k)) { seen.add(k); out.push(v); } }
+      return out;
+    };
+
+    const mode = String(req.query.mode || "replace").toLowerCase();
+    const finalDB = mode === "merge"
+      ? {
+          produtos: mergeById(current.produtos, data.produtos),
+          pedidos:  mergeById(current.pedidos,  data.pedidos),
+          pushSubs: uniqBy([...(current.pushSubs||[]), ...(data.pushSubs||[])], s => s?.endpoint || JSON.stringify(s)),
+        }
+      : data;
+
+    saveDB(finalDB);
+    res.json({
+      ok: true,
+      mode,
+      counts: {
+        produtos: finalDB.produtos.length,
+        pedidos:  finalDB.pedidos.length,
+        pushSubs: finalDB.pushSubs.length,
+      },
+      backup: path.basename(backupPath),
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao restaurar", detalhe: err.message });
+  }
 });
 
 /* --------------------------------- Start ------------------------------------ */

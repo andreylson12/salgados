@@ -109,11 +109,36 @@ function saveDB(db) {
 }
 
 /* -------------------------------- Config PIX -------------------------------- */
-// >>> TROCA: chave PIX agora é TELEFONE no formato oficial (55 + DDD + número, sem espaços)
-// Ex.: (99) 98833-8981  -> "559988338981"
-const chavePix = "559988338981";      // telefone como chave Pix
-const nomeLoja = "SALGADOS RAYLENIZA";   // máx ~25 chars
-const cidade   = "SAMBAIBA";             // máx ~15 chars
+// Config por TELEFONE como chave PIX
+// Aceita valor vindo de env ou fixo. Pode estar com ou sem máscara.
+// Exemplos aceitos:
+//   "559988338981"
+//   "+55 (99) 98833-8981"
+//   "(99) 98833-8981"
+const rawChavePixTelefone = process.env.PIX_CHAVE || "559988338981";
+const nomeLoja = process.env.PIX_NOME || "SALGADOS RAYLENIZA"; // máx ~25 chars
+const cidade   = process.env.PIX_CIDADE || "SAMBAIBA";         // máx ~15 chars
+
+function normalizarChavePixTelefone(raw) {
+  const somenteDigitos = String(raw || "").replace(/\D/g, ""); // tira tudo que não é número
+
+  // Espera 55 + DDD (2) + telefone (8 ou 9) => 12 ou 13 dígitos
+  if (!/^55\d{10,11}$/.test(somenteDigitos)) {
+    throw new Error("Chave PIX (telefone) inválida. Verifique a configuração.");
+  }
+
+  // Formato que a lib espera para TELEFONE: +5561912345678
+  return "+" + somenteDigitos;
+}
+
+let chavePixE164 = null;
+try {
+  chavePixE164 = normalizarChavePixTelefone(rawChavePixTelefone);
+  console.log("[pix] chave PIX telefone OK:", chavePixE164);
+} catch (err) {
+  console.error("[pix] ERRO NA CHAVE PIX:", err.message);
+  // permanece null, assim as rotas de PIX vão cair no catch e não quebram o servidor
+}
 
 /* ----------------------------- Push Web (opcional) --------------------------- */
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY  || "";
@@ -209,33 +234,40 @@ async function sendTelegramMessage(text) {
 
 /* -------------------------------- API PIX ----------------------------------- */
 app.get("/api/chave-pix", (_req, res) => {
-  // devolve a chave (telefone) e metadados
-  res.json({ chave: chavePix, nome: nomeLoja, cidade });
+  // devolve a chave *apenas com dígitos* para o front poder formatar como telefone
+  const somenteDigitos = String(rawChavePixTelefone || "").replace(/\D/g, "");
+  res.json({ chave: somenteDigitos, nome: nomeLoja, cidade });
 });
 
 app.get("/api/pix/:valor/:txid?", async (req, res) => {
   try {
+    if (!chavePixE164) {
+      throw new Error("Chave PIX (telefone) inválida. Verifique a configuração.");
+    }
+
     const raw = String(req.params.valor).replace(",", ".");
     const valor = Number(raw);
     if (!Number.isFinite(valor) || valor < 0.01) {
       return res.status(400).json({ error: "Valor inválido (mínimo 0,01)" });
     }
     const txid = (req.params.txid || "PIX" + Date.now()).slice(0, 25);
+
     const qrCodePix = QrCodePix({
       version: "01",
-      key: chavePix, // usa a chave telefone
+      key: chavePixE164,
       name: nomeLoja,
       city: cidade,
       transactionId: txid,
       value: Number(valor.toFixed(2)),
     });
+
     const payload = qrCodePix.payload().replace(/\s+/g, "");
     const qrCodeImage = await qrCodePix.base64();
     res.set("Cache-Control", "no-store");
-    res.json({ payload, qrCodeImage, txid, chave: chavePix });
+    res.json({ payload, qrCodeImage, txid, chave: chavePixE164 });
   } catch (err) {
     console.error("Erro ao gerar PIX:", err);
-    res.status(500).json({ error: "Falha ao gerar QR Code PIX" });
+    res.status(500).json({ error: err.message || "Falha ao gerar QR Code PIX" });
   }
 });
 
@@ -351,23 +383,29 @@ app.post("/api/pedidos", async (req, res) => {
   }
 
   try {
+    if (!chavePixE164) {
+      throw new Error("Chave PIX (telefone) inválida. Verifique a configuração.");
+    }
+
     const rawTotal = String(pedido.total).replace(",", ".");
     const valor = Number(rawTotal);
     if (!Number.isFinite(valor) || valor < 0.01) throw new Error("Valor do pedido inválido");
+
     const txid = ("PED" + pedido.id).slice(0, 25);
     const qrCodePix = QrCodePix({
       version: "01",
-      key: chavePix, // usa a chave telefone
+      key: chavePixE164,
       name: nomeLoja,
       city: cidade,
       transactionId: txid,
       value: Number(valor.toFixed(2)),
     });
+
     pedido.pix = {
       payload: qrCodePix.payload().replace(/\s+/g, ""),
       qrCodeImage: await qrCodePix.base64(),
       txid,
-      chave: chavePix,
+      chave: chavePixE164,
     };
   } catch (err) {
     console.error("Erro ao gerar PIX do pedido:", err);
